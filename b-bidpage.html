@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Create an Auction</title>
+    <link href="css/bootstrap.min.css" rel="stylesheet">
+
+    <script src="js/jquery.js"></script>
+    <script src="https://npmcdn.com/tether@1.2.4/dist/js/tether.min.js"></script>
+    <script src="js/bootstrap.min.js"></script>
+
+</head>
+
+<!--Sellers can create auctions for particular items, setting suitable conditions and
+features of the items including the item description, categorisation, starting price,
+reserve price and end date.-->
+
+
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
+
+            <a class="navbar-brand" href="b-home.php">
+                <img width="100" src="efast.png">
+            </a>
+
+            <ul class="navbar-nav ml-auto">
+            <button style="margin-left: 10px" type="button" onclick="window.location='logout.php';" class="btn btn-outline-danger btn-sm ">Logout</button>
+            </ul>
+
+
+</nav>
+
+
+
+<!--Buyers can bid for items and see the bids other users make as they are received.
+The system will manage the auction until the set end time and award the item to the highest bidder.
+The system should confirm to both the winner and seller of an auction its outcome.-->
+
+<body onload = "load_bid_page()">
+    <div style="padding-right: 3%; padding-left: 3%">
+
+        <br>
+
+        <button type="button" onclick="window.location='b-item-search.php';" class="btn btn-primary btn-sm">Back to search results</button>
+        <div id="spacer" style="height: 20px"></div>
+
+
+
+        <div class="card">
+            <div class="card-header" id="seller_profile">
+                Auctioned by:
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-4">
+                        <div class="card" style="height: 100%">
+                            <img id="item_pic" src="" alt="..." class="img-thumbnail" style="height: 100%">
+                        </div>
+                    </div>
+                    <div class="col-8">
+                        <div class="card text-left">
+                            <div id="item_title" class="card-header">
+                            </div>
+                            <div class="card-block" style="padding: 20px">
+                                <h4 class="card-title" id="highest_bid">Current highest bid: </h4>
+                                <div id="spacer" style="height: 20px"></div>
+                                <div class="input-group-prepend">
+                                    <div class="input-group mb-3">
+                                        <div class="input-group-prepend">
+                                            <span class="input-group-text">£</span>
+                                        </div>
+                                            <input type="text" class="form-control" aria-label="Amount (to the nearest dollar)" id="bid_price">
+                                        <span class="input-group-btn">
+                                            <button class="btn btn-primary" type="button" onclick="sendBid()" >Submit bid!</button>
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div id="remaining_time" class="card-footer text-muted">
+                                Remaining Time
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+        <br>
+        <!-- Nav tabs -->
+        <ul class="nav nav-tabs" role="tablist">
+            <li class="nav-item">
+                <a class="nav-link active" data-toggle="tab" href="#home">Description</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" data-toggle="tab" href="#menu1">Product Details</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" data-toggle="tab" href="#bid_history">Bids History</a>
+            </li>
+        </ul>
+
+        <!-- Tab panes -->
+        <div class="tab-content">
+            <div id="home" class="container tab-pane active">
+                <br>
+                <h3 id="item_title2"> ITEM_TITLE</h3>
+                <p id="item_description">Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore
+                    magna aliqua.</p>
+            </div>
+            <div id="menu1" class="container tab-pane fade">
+                <br>
+                <h3>Product Details</h3>
+                <p id="item_details">Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.</p>
+            </div>
+            <div id="bid_history" class="container tab-pane fade">
+                <br>
+                <h3>Bids History</h3>
+                <p id="starting_bid">Start of bidding at </p>
+                <p id="bid_history_log"> </p>
+            </div>
+        </div>
+
+
+
+        <br>
+        
+
+
+<script>
+    var start_price = "";
+    var old_counter = "";
+
+    function load_bid_page(){
+        load_auction_details();
+        check_bid_history();
+    }
+
+    function load_auction_details(){
+        //var id_auction = "AU_000041"; //should have global scope & should be populated on load of page - HARDCODED for now
+        //var id_user = "ID_000485"; //dummy placeholders
+        var xhttp;
+        xhttp = new XMLHttpRequest();
+        xhttp.onreadystatechange = function() {
+            if (this.readyState == 4 && this.status == 200) {
+                response = JSON.parse(this.responseText);
+                start_price = response[0].START_PRICE;
+                document.getElementById("item_pic").src = response[0].PIC;
+                document.getElementById("item_title").innerHTML =  response[0].TITLE;
+                document.getElementById("item_title2").innerHTML =  response[0].TITLE;
+                document.getElementById("item_description").innerHTML =  response[0].DESCRIPTION;
+                string_details = "Category: " + response[0].CATEGORY + "<br>" + "Condition: " + response[0].STATE;
+                document.getElementById("item_details").innerHTML = string_details;
+                var start_date = new Date(response[0].START_TIMESTAMP*1000);
+                start_date = start_date.toUTCString();
+                document.getElementById("starting_bid").innerHTML += "£" + response[0].START_PRICE + " on " + start_date;
+                document.getElementById("seller_profile").innerHTML += "<a href='profile-other.php?uID=" + response[0].ID_SELLER +  "'> " + response[0].FNAME + " " + response[0].LNAME + "</a>";
+                var expirationtime = response[0].EXPIRATION_TIME;
+
+
+                setInterval(function(){
+                    var remainingEpoch = expirationtime - (Date.now()/1000);
+                    var remainingDays = Math.floor(remainingEpoch/86400);
+                    var remainingHours = Math.floor((remainingEpoch % 86400)/3600);
+                    var remainingMinutes = Math.floor(((remainingEpoch % 86400) % 3600)/60);
+                    var remainingSeconds = Math.floor(((remainingEpoch % 86400) % 3600)%60);
+                    document.getElementById("remaining_time").innerHTML = "Remaining Time: " + remainingDays + " Days " + remainingHours + " Hours " + remainingMinutes + " Minutes " + remainingSeconds + " Seconds";
+                },100);
+
+            }
+        };
+        //xhttp.open("GET", "load-bid-page.php?id_auction="+id_auction+"&id_user="+id_user, true);
+        xhttp.open("GET", "load-bid-page.php", true);
+        xhttp.send();
+
+    }
+
+
+    function check_bid_history(){ // it loads a global variable counter for keeping track of how many bids have been made and refreshes the bid history on initial load of page
+        //var id_auction = "AU_000041"; //should have global scope & should be populated on load of page - HARDCODED for now
+        var xhttp;
+        xhttp = new XMLHttpRequest();
+        xhttp.onreadystatechange = function() {
+            if (this.readyState == 4 && this.status == 200) {
+                response = JSON.parse(this.responseText);
+                old_counter = response[0].COUNTER;
+                var expired_flag = response[0].EXPIRED;
+                if (expired_flag == 1){
+                    alert("Auction has expired. Please return to Home page.") //!! to return page to Home page
+                }
+                refreshBidHistory();
+            }
+        };
+        //xhttp.open("GET", "get-auction-counter.php?id_auction="+id_auction, true);
+        xhttp.open("GET", "get-auction-counter.php", true);
+        xhttp.send();
+
+        setInterval(function(){     //tells the page to call get-auction-counter.php every 3 seconds
+            var xhttp;
+            xhttp = new XMLHttpRequest();
+            xhttp.onreadystatechange = function() {
+                if (this.readyState == 4 && this.status == 200) {
+                    response = JSON.parse(this.responseText);
+                    new_counter = response[0].COUNTER;
+                    var expired_flag = response[0].EXPIRED;
+                    if (expired_flag == 1){
+                        alert("Auction has expired. Please return to Home page.") //!! to return page to Home page
+                    }
+                    if (new_counter != old_counter){
+                        refreshBidHistory();
+                        old_counter = new_counter
+                    }
+
+                }
+            };
+            //xhttp.open("GET", "get-auction-counter.php?id_auction="+id_auction, true);
+            xhttp.open("GET", "get-auction-counter.php", true);
+            xhttp.send();
+            }, 3000);
+    }
+
+    function sendBid(){
+        //load session variables for DOM hidden input elements to send via PHP for bidding
+        //var id_auction = "AU_000041"; //dummy placeholders
+        //var id_user = "ID_000052"; //dummy placeholders
+
+        //TAKEN FROM GITHUB -- TO ACKNOWLEDGE THIS WAS TAKEN FROM (https://gist.github.com/ophentis/3943464)
+        //for converting JS Date object into MySQL datetime format
+        Date.prototype.toMysqlFormat = function() {
+            function twoDigits(d) {
+                if(0 <= d && d < 10) return '0' + d.toString();
+                if(-10 < d && d < 0) return '-0' + (-1*d).toString();
+                return d.toString();
+            }
+
+            return this.getUTCFullYear() + "-" + twoDigits(1 + this.getUTCMonth()) + "-" + twoDigits(this.getUTCDate()) + " " + twoDigits(this.getUTCHours()) + ":" + twoDigits(this.getUTCMinutes()) + ":" + twoDigits(this.getUTCSeconds());
+        };
+
+        var present_timestamp = new Date().toMysqlFormat();
+
+        var bid_price = document.getElementById("bid_price").value;
+
+        if (bid_price < start_price){
+            alert("Bid price cannot be lower than start price!");
+            return;
+        }
+
+
+        var xhttp;
+        xhttp = new XMLHttpRequest();
+        xhttp.onreadystatechange = function() {
+            if (this.readyState == 4 && this.status == 200) {
+                if (this.responseText != ""){
+                    //create pop up for informing user that his bid is not currently highest - Pop up can be prettier
+                    alert(this.responseText);
+                } else {
+                    //clear out textfield and create pop up with confirmation of bid  - !!!! Pop up can be prettier
+                    document.getElementById("bid_price").value = "";
+                    alert("Congratualtions! Your bid was successful!")
+                }
+                //refresh bid history no matter whether bid was successful
+                refreshBidHistory();
+            }
+        };
+        //var parameters = "id_auction="+id_auction+"&id_user="+id_user+"&time="+present_timestamp+"&price="+bid_price;
+        var parameters = "time="+present_timestamp+"&price="+bid_price;
+        xhttp.open("POST", "send-bid.php/?"+parameters, true);
+        xhttp.send();
+    }
+
+    function refreshBidHistory(){
+        //var id_auction = "AU_000041"; //should have global scope & should be populated on load of page - HARDCODED for now
+        var xhttp;
+        xhttp = new XMLHttpRequest();
+        xhttp.onreadystatechange = function() {
+            if (this.readyState == 4 && this.status == 200) {
+                //populate the bid history html
+                var bid_history_string = "";
+                var bid_datetime ="";
+                var highest_bid = "";
+                response = JSON.parse(this.responseText);
+                old_counter = response.length;
+                if (old_counter == 0){ //Checks if a bid has been made. If no bid, then starting price is highest, otherwise populate bid history
+                    document.getElementById("highest_bid").innerHTML = "Current highest bid: £"+start_price;
+                } else {
+                    for (i = 0; i < response.length; i++){
+                        bid_datetime = new Date(response[i].TIME*1000);
+                        bid_datetime = bid_datetime.toUTCString();
+                        bid_history_string = bid_history_string += "<br />Bid of £" + response[i].PRICE + " declared at " + bid_datetime;
+                        highest_bid = response[i].PRICE;
+                    }
+                    document.getElementById("bid_history_log").innerHTML = bid_history_string;
+                    document.getElementById("highest_bid").innerHTML = "Current highest bid: £"+highest_bid;
+                }
+            }
+        };
+        //xhttp.open("GET", "retrieve-bid-history.php?id_auction="+id_auction, true);
+        xhttp.open("GET", "retrieve-bid-history.php", true);
+        xhttp.send();
+
+    }
+
+</script>
+
+
+</body>
+
+</html>
